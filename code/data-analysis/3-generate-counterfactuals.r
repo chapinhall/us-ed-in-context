@@ -6,11 +6,11 @@
 rm(list=ls())
 try(setwd("C:/Documents and Settings/nmader/My Documents/Google Drive/Lumina/Data and Documentation"))
 try(setwd("C:/Users/nmader/Google Drive/Lumina/Data and Documentation"))
+try(setwd("C:/Users/nmader/Documents/GitHub/us-ed-in-context/"))
 myOutDir <- "C:/Users/nmader/Google Drive/Lumina/Output/"
 
 "%&%" <- function(...){ paste(..., sep="") }
 comment <- function(...){}
-library("shiny")
 library("plyr")
 library("ggplot2")
 library("stats")
@@ -115,7 +115,7 @@ for (s in SpecRuns) {
   
   ### MyX, MyB ###
   useData <- mp[mp$variable %in% c("Ed_Coll", "Ed_Coll_MyX_MyB"), ]
-  png(file = myOutDir %&% "ProjColl_by_Gender_" %&% s %&% "_MyX_MyB.png", res = 600, width = 2400, height = 2100)
+  png(file = paste("./output/ProjColl_by_Gender", s, "MyX_MyB.png", sep="_"), res = 600, width = 2400, height = 2100)
   
   myPlot <- ggplot(data = useData, aes(x = cohort, y = value)) +
     labs(title = "College Projection by Gender", x = "Cohort", y = "Rate of College Attainment") +
@@ -130,7 +130,7 @@ for (s in SpecRuns) {
   
   # MalesX, MyB
   useData <- mp[mp$variable %in% c("Ed_Coll", "Ed_Coll_MalesX_MyB"), ]
-  png(file = myOutDir %&% "ProjColl_by_Gender_" %&% s %&% "_MalesX_MyB.png", res = 600, width = 2400, height = 2100)
+  png(file = paste("./output/ProjColl_by_Gender", s, "MalesX_MyB.png", sep="_"), res = 600, width = 2400, height = 2100)
   
   myPlot <- ggplot(data = useData, aes(x = cohort, y = value)) +  #, group = Gender, color = variable
     labs(title = "College Counterfactual by Gender:\nUsing Males' x's", x = "Cohort", y = "Rate of College Attainment") +
@@ -145,7 +145,7 @@ for (s in SpecRuns) {
   
   # MyX, MalesB
   useData <- mp[mp$variable %in% c("Ed_Coll", "Ed_Coll_MyX_MalesB"), ]
-  png(file = myOutDir %&% "ProjColl_by_Gender_" %&% s %&% "_MyX_MalesB.png", res = 600, width = 2400, height = 2100)
+  png(file = paste("./output/ProjColl_by_Gender", s, "MyX_MalesB.png", sep="_"), res = 600, width = 2400, height = 2100)
   
   myPlot <- ggplot(data = useData, aes(x = cohort, y = value)) +  #, group = Gender, color = variable
     labs(title = "College Counterfactual by Gender:\nUsing Males' betas's", x = "Cohort", y = "Rate of College Attainment") +
@@ -170,7 +170,7 @@ for (s in SpecRuns) {
     
     ### MyX, MyB ###
     useData <- mp[mp$variable %in% c("Ed_Coll", "Ed_Coll_MyX_MyB"), ]
-    png(file = myOutDir %&% "ProjColl_by_Race" %&% "_" %&% g %&% "_" %&% s %&% "_MyX_MyB.png", res = 600, width = 2400, height = 2100)
+    png(file = paste("./output/ProjColl_by_Race", g, s, "MyX_MyB.png", sep="_"), res = 600, width = 2400, height = 2100)
     
     myPlot <- ggplot(data = useData, aes(x = cohort, y = value)) +
       labs(title = "College Projection by Race:\nGender - " %&% g, x = "Cohort", y = "Rate of College Attainment") +
@@ -185,7 +185,7 @@ for (s in SpecRuns) {
     
     ### WhitesX, MyB ###
     useData <- mp[mp$variable %in% c("Ed_Coll", "Ed_Coll_WhitesX_MyB"), ]
-    png(file = myOutDir %&% "ProjColl_by_Race" %&% "_" %&% g %&% "_" %&% s %&% "_WhitesX_MyB.png", res = 600, width = 2400, height = 2100)
+    png(file = paste("./output/ProjColl_by_Race", g, s, "WhitesX_MyB.png", sep="_"), res = 600, width = 2400, height = 2100)
     
     myPlot <- ggplot(data = useData, aes(x = cohort, y = value)) +
       labs(title = "College Counterfactual by Race:\nGender - " %&% g, x = "Cohort", y = "Rate of College Attainment") +
@@ -200,7 +200,7 @@ for (s in SpecRuns) {
     
     ### MyX, WhitesB ###
     useData <- mp[mp$variable %in% c("Ed_Coll", "Ed_Coll_MyX_WhitesB"), ]
-    png(file = myOutDir %&% "ProjColl_by_Race" %&% "_" %&% g %&% "_" %&% s %&% "_MyX_WhitesB.png", res = 600, width = 2400, height = 2100)
+    png(file = paste("./output/ProjColl_by_Race", g, s, "MyX_WhitesB.png", sep="_"), res = 600, width = 2400, height = 2100)
     
     myPlot <- ggplot(data = useData, aes(x = cohort, y = value)) +
       labs(title = "College Counterfactual by Race:\nGender - " %&% g, x = "Cohort", y = "Rate of College Attainment") +
