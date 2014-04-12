@@ -48,10 +48,8 @@ proc freq data=cps_cohorts_1920_2011;
 	       RaisedWith2Adults*numadults 
 	       sex*Gender_Male*Gender_Female 
 	       race3*spneth race3*Race_WhiteNonH*Race_BlackNonH*Race_Hisp
-	       AttendedPreK Ed_LtHs completed_hs Ed_Grad_Hs Ed_Grad_Hs_Dip Ed_Grad_Hs_Ged Ed_SomeColl Ed_Coll Ed_GtColl
-	       FemEd_LtHs_avg Femcompleted_hs_avg FemEd_Grad_Hs_avg FemEd_Grad_Hs_Dip_avg FemEd_Grad_Hs_Ged_avg FemEd_SomeColl_avg FemEd_Coll_avg FemEd_GtColl_avg
-	       FamInc_Def_Max_0020k FamInc_Def_Max_2040k FamInc_Def_Max_4060k FamInc_Def_Max_6080k FamInc_Def_Max_80kplus
-	       FamInc_Def_Avg_0020k FamInc_Def_Avg_2040k FamInc_Def_Avg_4060k FamInc_Def_Avg_6080k FamInc_Def_Avg_80kplus
+	       AttendedPreK Ed_LtHs Ed_Compl_12Yrs Ed_Compl_14Yrs Ed_Compl_16Yrs Ed_Grad_Hs Ed_Combined_Hs Ed_Grad_Hs_Dip Ed_SomeColl Ed_GeColl Ed_Combined_GeColl Ed_GtColl
+	       FemEd_LtHs_avg FemEd_Compl_12Yrs_avg FemEd_Grad_Hs_avg FemEd_Combined_Hs_avg FemEd_Grad_Hs_Dip_avg FemEd_SomeColl_avg FemEd_GeColl_avg FemEd_GtColl_avg
 	       FamilyIncMax_Below100FPL FamilyIncAvg_Below100FPL FamilyIncMax_Below50FPL FamilyIncAvg_Below50FPL 
 	       FamilyIncMax_Below200FPL FamilyIncAvg_Below200FPL
 	       KidsinHH_Age0to3 KidsinHH_Age4to6 KidsinHH_Age0to6 KidsinHH_Age7to16 KidsinHH_Age0to16
@@ -62,23 +60,21 @@ proc freq data=cps_cohorts_1920_2011;
 	       RaisedWith2Adults
 	       Gender_Male Gender_Female 
 	       Race_WhiteNonH Race_BlackNonH Race_Hisp
-	       AttendedPreK Ed_LtHs completed_hs Ed_Grad_Hs Ed_Grad_Hs_Dip Ed_Grad_Hs_Ged Ed_SomeColl Ed_Coll Ed_GtColl
-	       FamInc_Def_Max_0020k FamInc_Def_Max_2040k FamInc_Def_Max_4060k FamInc_Def_Max_6080k FamInc_Def_Max_80kplus
-	       FamInc_Def_Avg_0020k FamInc_Def_Avg_2040k FamInc_Def_Avg_4060k FamInc_Def_Avg_6080k FamInc_Def_Avg_80kplus
+	       AttendedPreK Ed_LtHs Ed_Compl_12Yrs Ed_Grad_Hs Ed_Combined_Hs Ed_Grad_Hs_Dip Ed_SomeColl Ed_Coll Ed_GtColl
 	       FamilyIncMax_Below100FPL FamilyIncAvg_Below100FPL FamilyIncMax_Below50FPL FamilyIncAvg_Below50FPL 
 	       FamilyIncMax_Below200FPL FamilyIncAvg_Below200FPL
 	       KidsinHH_Age0to3 KidsinHH_Age4to6 KidsinHH_Age0to6 KidsinHH_Age7to16 KidsinHH_Age0to16 yesnof.;
 	title5 "VERIFY FINAL COHORT COUNTS AND FINAL BINARY INDICATORS";
 run; title5; run; 
 
+/* 
+FamInc_Def_Max_0020k FamInc_Def_Max_2040k FamInc_Def_Max_4060k FamInc_Def_Max_6080k FamInc_Def_Max_80kplus
+FamInc_Def_Avg_0020k FamInc_Def_Avg_2040k FamInc_Def_Avg_4060k FamInc_Def_Avg_6080k FamInc_Def_Avg_80kplus
+FamInc_Def_Max_0020k FamInc_Def_Max_2040k FamInc_Def_Max_4060k FamInc_Def_Max_6080k FamInc_Def_Max_80kplus
+FamInc_Def_Avg_0020k FamInc_Def_Avg_2040k FamInc_Def_Avg_4060k FamInc_Def_Avg_6080k FamInc_Def_Avg_80kplus */
+
 proc contents data=cps_cohorts_1920_2011; run; 
 proc sort data=cps_cohorts_1920_2011; by hhid lineno; run;
-
-proc print data=cps_cohorts_1920_2011;
-	where hhid="9240521195081980";
-	var cohort _year age race3 Gender_Female hhid lineno wgtfnl faminc NumKidsinHH_Age0to16 KidsinHH_Age0to16; 
-	title5 "LOOK AT WGTFNL FIELD (HHID=9240521195081980)";
-run; title5; run;
 
 proc sort data=cps_cohorts_1920_2011 out=testundup nodupkey; by hhid lineno; run;
 	
@@ -88,20 +84,11 @@ proc sql;
 	from testundup
 ;
 
-/* NSM: Because I've been having problems getting all of the SAS code to run all the way through my "by-cohort summaries" code below, 
-	I've added this small bit of code to 
-		(A) try to save a copy of the data to goodland so that I can put it up separately without having to run all of this code; and
-		(B) by putting it before the "proc print" below, test if the code has been hanging before getting to my "by-cohort summaries" code,
-			or if SAS is somehow skipping over code that I ask it to run. I'm getting very paranoid.
-	... My current hypothesis is that I'm not totally crazy, and that the p2 code file was just referencing a version of p3 that I WASN'T
-	working on, and which didn't have the code which I'd added. Am testing that now.  */
-	
+/**CREATE A PERM COPY OF THE MULTI-YEAR DATASET TO STREAMLINE PROGRAM TESTING
+   (ALLOW US TO BYPASS RUNNING THE P1 AND P2 PROGRAMS FOR EACH TEST PASS**/	
 data here.cps_cohorts_1920_2011;
 	set cps_cohorts_1920_2011;
 run;
-
-proc print data=grandtot; var gtot; run;
-proc freq data=here.cps_cohorts_1920_2011; tables cohort / list missing; run;
 
 %include chrtsum;
 

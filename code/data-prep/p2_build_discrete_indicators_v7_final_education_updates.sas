@@ -28,11 +28,18 @@ libname oraora oracle user=&orauser orapw=&orapass path=&oradb;
 libname here '/projects/Lumina_SocIndOfPostSec/Data';
 filename chrtbld '/projects/Lumina_SocIndOfPostSec/Code/generation_6_progs/p3_build_cohorts_v5_streamline_cohort_build.sas';
 filename varlab '/projects/Lumina_SocIndOfPostSec/Code/var_labels.sas';
+filename varform '/projects/Lumina_SocIndOfPostSec/Code/var_formats.sas';
 %LET OutPath = /projects/Lumina_SocIndOfPostSec/Data/;
+	
+**************************;
+***USER DEFINED FORMATS***;
+**************************;
+%include varform;
+run;
 	
 data cps_allvars_disc_1968_2011;
 		length bothpar 8;
-	set cps_allvars_1968_2011;
+	set here.cps_allvars_1968_2011;
 
   ******************************************;
   ***CREATE BINARY DEMOGRAPHIC INDICATORS***;
@@ -80,92 +87,105 @@ data cps_allvars_disc_1968_2011;
 
     ***CREATE LESS THAN HIGH SCHOOL VAR (THIS REFERS TO PEOPLE WHO DID NOT COMPLETE HIGH SCHOOL)***;   
 		if 1968 <= _year < 1992 then do;
-			if      _educ ^ in(. 0) and _educ < 12 and age > 21 then Ed_LtHs = 1;
-			else if _educ >= 12                    and age > 21 then Ed_LtHs = 0;
+			if      _educ ^ in(. 0) and _educ < 12 and 21 <= age <= 65 then Ed_LtHs = 1;
+			else if _educ >= 12                    and 21 <= age <= 65 then Ed_LtHs = 0;
 			else Ed_LtHs = .;
 		end;
-		if 1992<=_year<=2011 then do;
-			if 31 <= grdatn <= 34 and age > 21 then Ed_LtHs = 1;
-			else if grdatn > 34   and age > 21 then Ed_LtHs = 0;
+		if 1992 <= _year <= 2011 then do;
+			if 31 <= grdatn <= 34 and 21 <= age <= 65 then Ed_LtHs = 1;
+			else if grdatn > 34   and 21 <= age <= 65 then Ed_LtHs = 0;
 			else Ed_LtHs = .;
 		end;
 	  	                        
-	 	***CREATE HIGH SCHOOL COMPLETED VIA DIPLOMA VAR***; 	                        
+	***CREATE HIGH SCHOOL COMPLETED VIA DIPLOMA VAR***; 	                        
 	  if _year >= 1998 then do; 	                        
-			if      dipged=1 and age > 21 then Ed_Grad_Hs_Dip = 1;
-	  	    else if dipged=2 and age > 21 then Ed_Grad_Hs_Dip = 0;
+			if      dipged = 1 and 21 <= age <= 65 then Ed_Grad_Hs_Dip = 1;
+	  	    else if dipged = 2 and 21 <= age <= 65 then Ed_Grad_Hs_Dip = 0;
 	  	    else Ed_Grad_Hs_Dip = .;
-	  	 end;
+	  end;
 
-	  ***CREATE HIGH SCHOOL COMPLETED VIA GED/EQUIVALENT VAR***;	  	 
+	***CREATE HIGH SCHOOL COMPLETED VIA GED/EQUIVALENT VAR***;	  	 
 	  if _year >= 1998 then do; 	 	  	                                               
-	        if      dipged = 2 and age > 21 then Ed_Grad_Hs_Ged = 1;
-	  	    else if dipged = 1 and age > 21 then Ed_Grad_Hs_Ged = 0;
+	        if      dipged = 2 and 21 <= age <= 65 then Ed_Grad_Hs_Ged = 1;
+	  	    else if dipged = 1 and 21 <= age <= 65 then Ed_Grad_Hs_Ged = 0;
 	  	    else Ed_Grad_Hs_Ged = .; 	  	  	                        
-		end;
+	  end;
 	
-			***CREATE AN INDICATOR OF EITHER HS OR GED CREDENTIAL***;
-			if      1968 <= _year < 1992 then Ed_Grad_Hs = .; 
-			else if _year >= 1992 and grdatn>=39 and age>21 then Ed_Grad_Hs=1;
-			 else if _year >= 1998 and dipged in(1 2) and age>21 then Ed_Grad_Hs=1;
-			  else if _year >= 1992 and . < grdatn <39 and dipged ^ in(1 2) and age>21 then Ed_Grad_Hs=0;
-	     	  else if _year>=1992 then Ed_Grad_Hs=.;
-  
-	***COMPLETED HIGH SCHOOL (UNRELATED TO THE METHOD OF HS COMPLETION)***;
+	***CREATE AN INDICATOR OF EITHER HS OR GED CREDENTIAL***;
+	  /* Note: */
+	  /* Our decision process is to look at only individuals 21 or older (to ensure enough time to complete a HS degree or equivalency), and to presume
+	  	that anyone who reports strictly more than a HS degree has obtained a high school degree along the way. Note that this definition of "Hs" includes,
+	    and does not distinguish between, both traditional HS diploma and GED. */
+	  if      1968 <= _year < 1992 or age < 21 then Ed_Grad_Hs = .;
+	  else if 1992 <= _year and 39 <= grdatn    and 21 <= age <= 65 then Ed_Grad_Hs = 1;
+	  else if 1992 <= _year and . < grdatn < 39 and 21 <= age <= 65 then Ed_Grad_Hs = 0; *  and dipged ^ in(1 2);
+	  	/* Note: the universe responding to dipged is anyone with grdatn = 39, i.e. having either an HS diploma or GED.
+	  		There will be individuals who have a HS/GED AND more education who are not in this universe. We should not count these individuals
+	  		as not having a HS diploma. */
+	  else if 1992 <= _year then Ed_Grad_Hs = .;
+	  
+ 
+	***COMPLETED TWELVE YEARS OF SCHOOLING***;
 		if 1968 <= _year < 1992 then do;
-			if      _educ ^ in(.,0) and _educ >= 12 and age > 21 then completed_hs = 1; 
-            else if _educ ^ in(.,0) and _educ <  12 and age > 21 then completed_hs = 0;
-            else completed_hs = .;
+			if      _educ ^ in(.,0) and _educ >= 12 and 21 <= age <= 65 then Ed_Compl_12Yrs = 1; 
+            else if _educ ^ in(.,0) and _educ <  12 and 21 <= age <= 65 then Ed_Compl_12Yrs = 0;
+            else Ed_Compl_12Yrs = .;
 		end;
-		else if 1992 <= _year <= 2011 then do;
-			if      grdatn ^ in(. -1 0) and grdatn >= 39 and age > 21 then completed_hs = 1;
-			else if grdatn ^ in(. -1 0) and grdatn <  39 and age > 21 then completed_hs = 0;
-			else completed_hs = .;
-        end;
+
+    ***CONSTRUCT HYBRID MEASURE OF HS COMPLETION***;
+		/* This mixes use of various HS completion measures, to obtain a single series across time. It combines Ed_Compl_12Yrs, which is the closest measurement
+		   to high school completion between 1968 and 1992, and Ed_Grad_Hs which is direct confirmation of a high school credential (either diploma or GED) from 1993 to present. */
+		Ed_Combined_Hs = .;
+		if      1968 <= _year < 1992  then Ed_Combined_Hs = Ed_Compl_12Yrs;
+		else if 1992 <= _year <= 2011 then Ed_Combined_Hs = Ed_Grad_Hs;
       
 	***COMPLETED SOME COLLEGE BUT NO DEGREE***; ***DOES NOT SEEM APPROPRIATE TO CREATE THIS VAR FOR 1968-1991 DATA***; 
-		if      1992 <= _year <= 2011 and grdatn ^ in(. -1 0) and grdatn >= 40 and age > 25 then Ed_SomeColl = 1;
-		else if 1992 <= _year <= 2011 and grdatn ^ in(. -1 0) and grdatn <  40 and age > 25 then Ed_SomeColl = 0;
+		if      1992 <= _year <= 2011 and grdatn ^ in(. -1 0) and grdatn >= 40 and 25 <= age <= 65 then Ed_SomeColl = 1;
+		else if 1992 <= _year <= 2011 and grdatn ^ in(. -1 0) and grdatn <  40 and 25 <= age <= 65 then Ed_SomeColl = 0;
 		else Ed_SomeColl = .;
       
 	***COMPLETED ASSOCIATE DEGREE (2-YEAR DEGREE)***;
 		if 1968<=_year<1992 then do;
-			if      _educ ^ in(.,0) and _educ >= 14 and age > 25 then  Ed_2YrColl = 1;
-			else if _educ ^ in(.,0) and _educ <  14 and age > 25 then  Ed_2YrColl = 0;
-			else Ed_2YrColl = .;
+			if      _educ ^ in(.,0) and _educ >= 14 and 25 <= age <= 65 then  Ed_Compl_14Yrs = 1;
+			else if _educ ^ in(.,0) and _educ <  14 and 25 <= age <= 65 then  Ed_Compl_14Yrs = 0;
+			else Ed_Compl_14Yrs = .;
 		end;
 		else if 1992 <= _year <= 2011 then do;
-			if      grdatn ^ in(. -1 0) and grdatn >= 41 and age > 25 then Ed_2YrColl = 1;    
-			else if grdatn ^ in(. -1 0) and grdatn <  41 and age > 25 then Ed_2YrColl = 0; 
-			else Ed_2YrColl = .;
-		end;  
+			if      grdatn ^ in(. -1 0) and grdatn >= 41 and 25 <= age <= 65 then Ed_Ge2YrColl = 1;    
+			else if grdatn ^ in(. -1 0) and grdatn <  41 and 25 <= age <= 65 then Ed_Ge2YrColl = 0; 
+			else Ed_Ge2YrColl = .;
+		end;
       
 	***COMPLETED BACHELORS DEGREE (4-YEAR DEGREE)***;
 		if 1968 <= _year < 1992 then do;
-			if      _educ ^ in(.,0) and _educ >= 16 and age > 25 then Ed_4YrColl = 1;
-			else if _educ ^ in(.,0) and _educ <  16 and age > 25 then Ed_4YrColl = 0;
+			if      _educ ^ in(.,0) and _educ >= 16 and 25 <= age <= 65 then Ed_Compl_16Yrs = 1;
+			else if _educ ^ in(.,0) and _educ <  16 and 25 <= age <= 65 then Ed_Compl_16Yrs = 0;
 			else Ed_4YrColl = .;
 		end;
 		else if 1992 <= _year <= 2011 then do;
-			if      grdatn ^ in(. -1 0) and grdatn >= 43 and age > 25 then Ed_4YrColl = 1;
-			else if grdatn ^ in(. -1 0) and grdatn <  43 and age > 25 then Ed_4YrColl = 0;
+			if      grdatn ^ in(. -1 0) and grdatn >= 43 and 25 <= age <= 65 then Ed_Ge4YrColl = 1;
+			else if grdatn ^ in(. -1 0) and grdatn <  43 and 25 <= age <= 65 then Ed_Ge4YrColl = 0;
 			else Ed_4YrColl = .;
 		end;
       
-	***COMPLETED ASSOCIATES OR BACHELORS DEGREE***;     
-		if      Ed_2YrColl = 1 or  Ed_4YrColl = 1 then Ed_Coll = 1;  
-		else if Ed_2YrColl = 0 and Ed_4YrColl = 0 then Ed_Coll = 0; 
-		else Ed_Coll = .;    
+	***COMPLETED ASSOCIATES OR BACHELORS DEGREE***;     	
+		if      Ed_Ge2YrColl = 1 or  Ed_Ge4YrColl = 1 then Ed_GeColl = 1;  
+		else if Ed_Ge2YrColl = 0 and Ed_Ge4YrColl = 0 then Ed_GeColl = 0; 
+		else Ed_GeColl = .; 
+		
+		Ed_Combined_GeColl = .;
+		if      1968 <= _year < 1992  then Ed_Combined_GeColl = Ed_Compl_14Yrs;
+		else if 1992 <= _year <= 2011 then Ed_Combined_GeColl = Ed_GeColl;
 
 	***COMPLETED MASTERS DEGREE OR HIGHER)***;
 		if 1968<=_year<1992 then do;
-			if      _educ ^ in(.,0) and _educ >= 18 and age > 30 then Ed_GtColl = 1;
-			else if _educ ^ in(.,0) and _educ <  18 and age > 30 then Ed_GtColl = 0;
+			if      _educ ^ in(.,0) and _educ >= 18 and 30 <= age <= 65 then Ed_GtColl = 1;
+			else if _educ ^ in(.,0) and _educ <  18 and 30 <= age <= 65 then Ed_GtColl = 0;
 			else Ed_GtColl = .;
 		end;
 		else if 1992<=_year<=2011 then do;
-			if      grdatn ^ in(. -1 0) and grdatn >= 44 and age > 30 then Ed_GtColl = 1;
-			else if grdatn ^ in(. -1 0) and grdatn <  44 and age > 30 then Ed_GtColl = 0;
+			if      grdatn ^ in(. -1 0) and grdatn >= 44 and 30 <= age <= 65 then Ed_GtColl = 1;
+			else if grdatn ^ in(. -1 0) and grdatn <  44 and 30 <= age <= 65 then Ed_GtColl = 0;
 			else Ed_GtColl = .;
 		end;
  
@@ -182,10 +202,20 @@ run;
 /*---------------------------------------------------------*/
 /***IDENTIFY THE EDUCATIONAL ATTAINMENT FOR ADULT FEMALES***/
 /*---------------------------------------------------------*/
-data cps_1968_2011_adltfemedu(rename=(Ed_LtHs=FemEd_LtHs Ed_Grad_Hs=FemEd_Grad_Hs Ed_Grad_Hs_Dip=FemEd_Grad_Hs_Dip
-	                                    Ed_Grad_Hs_Ged=FemEd_Grad_Hs_Ged completed_hs=Femcompleted_hs
-	                                    Ed_SomeColl=FemEd_SomeColl Ed_2YrColl=FemEd_2YrColl Ed_4YrColl=FemEd_4YrColl
-	                                    Ed_Coll=FemEd_Coll Ed_GtColl=FemEd_GtColl));
+data cps_1968_2011_adltfemedu(rename=(Ed_LtHs            = FemEd_LtHs
+									  Ed_Compl_12Yrs     = FemEd_Compl_12Yrs
+									  Ed_Grad_Hs         = FemEd_Grad_Hs
+									  Ed_Combined_Hs     = FemEd_Combined_Hs
+									  Ed_Grad_Hs_Dip     = FemEd_Grad_Hs_Dip
+									  Ed_Grad_Hs_Ged     = FemEd_Grad_Hs_Ged
+									  Ed_SomeColl        = FemEd_SomeColl
+									  Ed_Compl_14Yrs     = FemEd_Compl_14Yrs
+									  Ed_Ge2YrColl       = FemEd_Ge2YrColl
+									  Ed_Compl_16Yrs     = FemEd_Compl_16Yrs
+									  Ed_Ge4YrColl       = FemEd_Ge4YrColl
+									  Ed_GeColl          = FemEd_GeColl
+									  Ed_Combined_GeColl = FemEd_Combined_GeColl
+									  Ed_GtColl          = FemEd_GtColl));
 	set cps_allvars_disc_1968_2011(where=(age>21 and sex^=1));
 run;
 
@@ -194,9 +224,20 @@ run;
 /*---------------------------------------------------------------------------------*/
 	proc sql;
 		create table cps_1968_2011_adltfemeduc as
-		select hhid, avg(FemEd_LtHs) as FemEd_LtHs_avg, avg(FemEd_Grad_Hs) as FemEd_Grad_Hs_avg, avg(FemEd_Grad_Hs_Dip) as FemEd_Grad_Hs_Dip_avg,
-					 avg(FemEd_Grad_Hs_Ged) as FemEd_Grad_Hs_Ged_avg, avg(Femcompleted_hs) as Femcompleted_hs_avg, avg(FemEd_SomeColl) as FemEd_SomeColl_avg,
-					 avg(FemEd_2YrColl) as FemEd_2YrColl_avg, avg(FemEd_4YrColl) as FemEd_4YrColl_avg, avg(FemEd_Coll) as FemEd_Coll_avg, avg(FemEd_GtColl) as FemEd_GtColl_avg
+		select hhid, avg(FemEd_LtHs)            as FemEd_LtHs_avg,
+					 avg(FemEd_Compl_12Yrs)     as FemEd_Compl_12Yrs_avg, 
+					 avg(FemEd_Grad_Hs)         as FemEd_Grad_Hs_avg,
+		             avg(FemEd_Combined_Hs)     as FemEd_Combined_Hs_avg,
+					 avg(FemEd_Grad_Hs_Dip)     as FemEd_Grad_Hs_Dip_avg,
+					 avg(FemEd_Grad_Hs_Ged)     as FemEd_Grad_Hs_Ged_avg,
+					 avg(FemEd_SomeColl)        as FemEd_SomeColl_avg,
+					 avg(FemEd_Compl_14Yrs)     as FemEd_Compl_14Yrs_avg, 
+					 avg(FemEd_Ge2YrColl)       as FemEd_Ge2YrColl_avg,
+					 avg(FemEd_Compl_16Yrs)     as FemEd_Compl_16Yrs_avg, 
+					 avg(FemEd_Ge4YrColl)       as FemEd_Ge4YrColl_avg,
+					 avg(FemEd_GeColl)          as FemEd_GeColl_avg,
+					 avg(FemEd_Combined_GeColl) as FemEd_Combined_GeColl_avg,
+					 avg(FemEd_GtColl)          as FemEd_GtColl_avg
 		from cps_1968_2011_adltfemedu
 		group by hhid
 	;
@@ -209,8 +250,6 @@ run;
 		on a.hhid=b.hhid
 	;	
 
-	proc freq data=cps_1968_2011_adltfemedu; tables FemEd: / list missprint; run; 
-	
 /*----------------------------------------------*/
 /***CONSTRUCT MEASURES OF HOUSHOLD COMPOSITION***/
 /*----------------------------------------------*/
@@ -232,9 +271,6 @@ run;
 		on a.hhid=b.hhid
 	;	
 
-	proc freq data=cps_1968_2011_adltfemedu; tables numpers / list missprint; run;  
-
-		
 	***CALCULATE THE NUMBER OF ADULTS WITHIN EACH HOUSEHOLD***;	
 	proc sql;
 		create table cps_1968_2011_hhnumadults as
@@ -244,11 +280,6 @@ run;
 		group by hhid
 	;
 
-	proc print data=cps_1968_2011_hhnumadults; 
-		where hhid in("9999903985409131998"); 
-		var hhid numadults; 
-		title5 "AFTER CALC NUMADULTS BUT BEFORE REJOIN"; run; title5; run;  
-
 	***JOIN THE NUMBER OF ADULTS VALUE BACK TO THE BASE DATA***;
 	proc sql;
 		create table cps_1968_2011_withnumadlt as
@@ -256,11 +287,6 @@ run;
 		from cps_1968_2011_adltfemedu as a left join cps_1968_2011_hhnumadults as b
 		on a.hhid=b.hhid
 	;
-
-	proc print data=cps_1968_2011_withnumadlt; 
-		where hhid in("9999903985409131998"); 
-		var _year hhid lineno popstatnew age numadults; 
-		title5 "AFTER CALC NUMADULTS AND AFTER NUMADULTS REJOIN"; run; title5; run;
 
 ************************************************************************************;	
 ***CREATE MACRO TO EVALUATE THE NUMBER OF KIDS OF VARIOUS AGES WITHIN A HOUSEHOLD***;
@@ -320,7 +346,18 @@ data cps_1968_2011_withnumadlt(rename=(hhnumkids03=NumKidsinHH_Age0to3 hhnumkids
                         if misszero{i}=. then misszero{i}=0;
                      end;
                   end;
-                  
+/**FOR ALL RECORDS WHERE THE FOCAL PERSON IS AN ADULT (>16) WE SET ALL HOUSEHOLD INDICATORS TO MISSING
+   SO THAT THE AGGREGATE RESULTS ARE ONLY REFERRING TO THE HOUSEHOLD CONDITIONS FOR KIDS**/                  
+	if age>16 then do;
+		               array missset {22} FemEd_LtHs_avg FemEd_Compl_12Yrs_avg FemEd_Compl_14Yrs_avg FemEd_Compl_16Yrs_avg FemEd_Grad_Hs_avg FemEd_Combined_Hs_avg
+										FemEd_Grad_Hs_Dip_avg FemEd_SomeColl_avg FemEd_GeColl_avg FemEd_Combined_GeColl_avg FemEd_GtColl_avg numpers numadults 
+										NumKidsinHH_Age0to3 NumKidsinHH_Age4to6 NumKidsinHH_Age0to6 NumKidsinHH_Age7to16 NumKidsinHH_Age0to16
+										FamilyInc_Defl FamilyInc_Defl_Max FamilyInc_Defl_Avg PovLev_Defl;
+                     do i=1 to 22;
+                        missset{i}=.;
+                     end;
+                  end;
+                                    
 ***DEFINE BINARY VERSIONS OF NUM KIDS CATEGORIES***;
   if hhnumkids03>0 then KidsinHH_Age0to3=1;  else if hhnumkids03^=. then KidsinHH_Age0to3=0; else KidsinHH_Age0to3=.;
   if hhnumkids46>0 then KidsinHH_Age4to6=1;  else if hhnumkids46^=. then KidsinHH_Age4to6=0; else KidsinHH_Age4to6=.;
@@ -416,17 +453,12 @@ proc sql;
 	from poverty_guidelines_65_12 as a left join here.cpi_1913_2013_deflator as b
 	on a.issue_dt=b.year;
 	
-proc freq data=cps_allvars_1968_2011_povlev; tables PovLev_Defl / list missprint; run; 
-
 ***RE-JOIN POVERTY LEVELS (ADJUSTED FOR INFLATION) TO ALL RECORDS FOR A PARTICULAR SURVEY YEAR AND HH PERSONS COMBO***;
 proc sql;
 	create table cps_allvars_1968_2011 as
 	select a.*, b.PovLev_Defl
-	from cps_1968_2011_allpers_numkids as a left join cps_allvars_1968_2011_povlev as b
+	from cps_1968_2011_allpers_numkids(drop=PovLev_Defl) as a left join cps_allvars_1968_2011_povlev as b
 	on a._year=b.issue_dt and a.numpers=b.persnum;
-
-    
-proc print data=cps_allvars_1968_2011; where _year=2011; var hhid lineno _year numpers PovLev_Defl; run; 
 	
 ***DEFINE BINARY FAMILY INCOME RELATIVE TO POVERTY GUIDELINES INDICATORS***;
 data cps_allvars_1968_2011;
@@ -460,7 +492,7 @@ data cps_allvars_1968_2011;
 	format spneth spnethf. agecat agecatf.;
 	%include varlab;
   	      
-run;      
+run;   
 
 /* Troubleshooting education construction */
 %PUT First Check;
@@ -470,14 +502,6 @@ run;
 
 proc freq data=cps_allvars_1968_2011;
 tables _year age _year*dipged / list missing; run;
-
-data test1;
-	set cps_allvars_1968_2011;
-run;
-
-proc freq data=test1; where age>21; tables completed_hs / list missing; run;
-proc freq data=test1; where age>21 and _year>=1992; tables Ed_Grad_Hs / list missing; run;
-proc freq data=test1; where age>21 and _year>=1998 and dipged^in(. -1); tables Ed_Grad_Hs_Ged Ed_Grad_Hs_Dip / list missing; run;	
 
 proc datasets lib=work nolist;
 change cps_allvars_1968_2011 = cps_1968_2011_allpers_for_chrt;

@@ -35,9 +35,6 @@ data cps_cohorts_1920_2011;
 	year = _year;
 run;
 
-proc freq data = cps_cohorts_1920_2011;
-     tables cohort * Ed_Grad_Hs / list;
-run;
 proc sort data = cps_cohorts_1920_2011; by cohort;
 proc means data = cps_cohorts_1920_2011;
 	var Ed_Grad_Hs;
@@ -46,24 +43,6 @@ run;
 
 /* Examine the data */
 
-/*proc sort data = cps_cohorts_1920_2011; by cohort;
-proc contents data = cps_cohorts_1920_2011;
-proc freq data = cps_cohorts_1920_2011;	
-	tables cohort;
-proc means data = cps_cohorts_1920_2011;
-	var Ed_Grad_Hs;
-	by cohort;
-	output out = abc mean = Ed_Grad_Hs std = Ed_Grad_Hs_std stderr = Ed_Grad_Hs_stderr;
-proc print data = abc;
-proc means data = cps_cohorts_1920_2011;
-	var Ed_Grad_Hs;
-	by cohort;
-	weight wgtfnl;
-	output out = def mean = Ed_Grad_Hs std = Ed_Grad_Hs_std  stderr = Ed_Grad_Hs_stderr;
-proc print data = def;
-run;
-*/
-
 /*----------------------------------------*/
 /* Collapse data into by-cohort summaries */
 /*----------------------------------------*/
@@ -71,8 +50,8 @@ run;
               RaisedWith2Adults
               Gender_Male Gender_Female 
               Race_WhiteNonH Race_BlackNonH Race_Hisp
-              AttendedPreK Ed_LtHs Completed_Hs Ed_Grad_Hs Ed_Grad_Hs_Dip Ed_Grad_Hs_Ged Ed_SomeColl Ed_2YrColl Ed_4YrColl Ed_Coll Ed_GtColl
-              FemEd_LtHs_avg Femcompleted_hs_avg FemEd_Grad_Hs_avg FemEd_Grad_Hs_Dip_avg FemEd_Grad_Hs_Ged_avg FemEd_SomeColl_avg FemEd_2YrColl_avg FemEd_4YrColl_avg FemEd_Coll_avg FemEd_GtColl_avg
+              AttendedPreK Ed_LtHs Ed_Compl_12Yrs Ed_Compl_14Yrs Ed_Compl_16Yrs Ed_Grad_Hs Ed_Combined_Hs Ed_Grad_Hs_Dip Ed_SomeColl Ed_GeColl Ed_Combined_GeColl Ed_GtColl
+              FemEd_LtHs_avg FemEd_Compl_12Yrs_avg FemEd_Compl_14Yrs_avg FemEd_Compl_16Yrs_avg FemEd_Grad_Hs_avg FemEd_Combined_Hs_avg FemEd_Grad_Hs_Dip_avg FemEd_SomeColl_avg FemEd_GeColl_avg FemEd_Combined_GeColl_avg FemEd_GtColl_avg
 			  FamilyInc_Defl FamilyInc_Defl_Avg FamilyInc_Defl_Max
               FamInc_Def_Max_0020k FamInc_Def_Max_2040k FamInc_Def_Max_4060k FamInc_Def_Max_6080k FamInc_Def_Max_80kplus
               FamInc_Def_Avg_0020k FamInc_Def_Avg_2040k FamInc_Def_Avg_4060k FamInc_Def_Avg_6080k FamInc_Def_Avg_80kplus
@@ -96,7 +75,6 @@ run;
 	%end;
 %mend;
 %CreateMoreNames;
-
 
 /*----------------------------------------------------------------------*/
 /* RUN LOOP OF DESCRIPTIVE SUMMARY CALCULATIONS BY GENDER/RACE SUBGROUP */

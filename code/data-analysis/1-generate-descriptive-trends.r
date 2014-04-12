@@ -33,20 +33,32 @@
   
     #cps$Ed_2YrCollIf  <- cps$Ed_2YrColl / cps$Ed_SomeColl
     #cps$Ed_4YrCollIf  <- cps$Ed_4YrColl / cps$Ed_SomeColl
-    cps$Ed_CollIf     <- cps$Ed_Coll    / cps$Ed_SomeColl
-    cps$Ed_CollIf_se <- sqrt( (cps$Ed_Coll^2 * cps$Ed_SomeColl_se^2) + (cps$Ed_SomeColl^2 * cps$Ed_Coll_se^2) )
+    cps$Ed_GeCollIf     <- cps$Ed_GeColl    / cps$Ed_SomeColl
+    cps$Ed_GeCollIf_se <- sqrt( (cps$Ed_GeColl^2 * cps$Ed_SomeColl_se^2) + (cps$Ed_SomeColl^2 * cps$Ed_GeColl_se^2) )
   
   ### Rescale household income
     cps$FamilyInc_Defl     <- cps$FamilyInc_Defl     / 10000
     cps$FamilyInc_Defl_Avg <- cps$FamilyInc_Defl_Avg / 10000
     cps$FamilyInc_Defl_Max <- cps$FamilyInc_Defl_Max / 10000
+  
+  ### Other variable generation
+    for (v in c("FamilyIncMax", "FamilyIncAvg")) {
+      cps[, v %&% "_Above100FPL"   ] <- 1 - cps[, v %&% "_Below100FPL"]
+      cps[, v %&% "_Above100FPL_se"] <- cps[, v %&% "_Below100FPL_se"]
+      cps[, v %&% "_Above100FPL_sd"] <- cps[, v %&% "_Below100FPL_sd"]
+      cps[, v %&% "_Above100FPL_N" ] <- cps[, v %&% "_Below100FPL_N"]
+    }
 
+  
+  ### Create a variable which uniquely identifies each record (for use in Excel)
+    cps <- within(cps, id <- paste(cohort, year, Gender, Race, Weight, sep="_"))
   
   ### Reorder the columns in data for easier browsing
     cpsColnames <- colnames(cps)
-    idVars <- c("By", "cohort", "year", "Gender", "Race", "Weight")
+    idVars <- c("id", "By", "cohort", "year", "Gender", "Race", "Weight")
     nonIdVars <- cpsColnames[which(!(cpsColnames %in% idVars))]
     cps <- cbind(cps[, idVars], cps[, nonIdVars[order(nonIdVars)]])
+  
   
   #----------------------------------
   #----------------------------------
@@ -54,7 +66,7 @@
   #----------------------------------
   #----------------------------------
   
-  ## Identify each cohort by decade
+  ## Identify each cohort by decade, which can be used to summarize cohort characteristics by ten year aggregates
   
   for (d in seq(1930, 2010, by=10)) {
     cond <- d <= cps$cohort & cps$cohort <= d+9
@@ -86,6 +98,10 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
   pd <- position_dodge(.1)
   myWidth  <- 2400
   myHeight <- 1800
+  lvlLo   <- 0.0
+  lvlHi   <- 1.0
+  condLo  <- 0.4
+  condHi  <- 1.0
   
   # Test values
   b <- "cohort"; r <- "All"; g <- "All"; w <- "NoW";
@@ -116,12 +132,15 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
           
               if (b=="cohort") {xRestr <- 1940 <= dd$myX & dd$myX <= 1990 } else {xRestr <- dd$myX == dd$myX }
               useData <- dd[(dd$variable %in% AllLvlEds) & xRestr,]
+              myYlo <- min(dd$value)
+              myYhi <- max(dd$value)
+          
               myPlot <- ggplot(data=useData, aes(x = myX, y = value, group = variable, color = variable)) + 
-                labs(title = "Education Levels:\nRace - " %&% r %&% ", Gender - " %&% g, x = By_l[b], y = myYEdLab) +
+                labs(title = "Education Levels:\nRace - " %&% Dems_l["Race_" %&% r] %&% ", Gender - " %&% Dems_l["Gender_" %&% g], x = By_l[b], y = myYEdLab) +
                 scale_colour_discrete(name = "", breaks = names(AllEds_l), labels = AllEds_l) +
                 theme(plot.title = element_text(size = rel(titleRelSize)), legend.position = "bottom", legend.text = element_text(size = rel(legendRelSize)),
                   axis.title.x = element_text(size = rel(axisRelSize)), axis.title.y = element_text(size = rel(axisRelSize))) + 
-                geom_line(size = lineSize)
+                geom_line(size = lineSize) + ylim(lvlLo, lvlHi)
               print(myPlot)
         
             dev.off()
@@ -134,11 +153,11 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
               if (b=="cohort") {xRestr <- 1940 <= dd$myX & dd$myX <= 1990 } else { xRestr <- dd$myX == dd$myX }
               useData <- dd[(dd$variable %in% AllCondEds) & xRestr,]
               myPlot <- ggplot(data=useData, aes(x = myX, y = value, group = variable, color = variable)) + 
-                labs(title = "Conditional Educational Outcomes:\nRace - " %&% r %&% ", Gender - " %&% g, x = By_l[b], y = myYEdLab) +
+                labs(title = "Conditional Educational Outcomes:\nRace - " %&% Dems_l["Race_" %&% r] %&% ", Gender - " %&% Dems_l["Gender_" %&% g], x = By_l[b], y = myYEdLab) +
                 scale_colour_discrete(name = "", breaks = names(AllEds_l), labels = AllEds_l) +
                 theme(plot.title = element_text(size = rel(titleRelSize)), legend.position = "bottom", legend.text = element_text(size = rel(legendRelSize)),
                       axis.title.x = element_text(size = rel(axisRelSize)), axis.title.y = element_text(size = rel(axisRelSize))) + 
-                geom_line(size = lineSize)
+                geom_line(size = lineSize) + ylim(condLo, condHi)
               print(myPlot)
             
             dev.off()
@@ -151,7 +170,7 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
               
                 useData <- dd[dd$variable %in% SomeSampleNs,]
                 myPlot <- ggplot(data=useData, aes(x = myX, y = value, group = variable, color = variable)) + 
-                  labs(title = "Sample Ns for Selected Variables:\nRace - " %&% r %&% ", Gender - " %&% g, x = By_l[b], y = "Sample Ns") +
+                  labs(title = "Sample Ns for Selected Variables:\nRace - " %&% Dems_l["Race_" %&% r] %&% ", Gender - " %&% Dems_l["Gender_" %&% g], x = By_l[b], y = "Sample Ns") +
                   scale_colour_discrete(name = "", breaks = names(SomeSampleNs_l), labels = SomeSampleNs_l) +
                   theme(plot.title = element_text(size = rel(titleRelSize)), legend.position = "bottom",
                     legend.text = element_text(size = rel(legendRelSize)), 
@@ -191,8 +210,8 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
   ### Compare genders on same plot (for Ed, indicators, etc)
   #---------------------------------------------------------
   
-    genderRunVars <- c(AllLvlEds, AllCondEds, Dems, Inds)
-    genderRunVars_l <- c(AllEds_l[c(AllLvlEds, AllCondEds)], Dems_l, Inds_l)
+    genderRunVars <- c(AllLvlEds, AllCondEds, Inds) # AllGenders, AllRaces, 
+    genderRunVars_l <- c(AllEds_l[c(AllLvlEds, AllCondEds)], Inds_l) # Dems_l, 
     names(genderRunVars_l) <- genderRunVars
     print("Running plots by Gender")
   
@@ -208,17 +227,24 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
           dd$myX <- dd[, b]
           dd$myY <- dd[, y]
           
-          if (y %in% AllEds & b=="cohort") {xRestr <- 1940 <= dd$myX & dd$myX <= 1990 } else { xRestr <- dd$myX == dd$myX }
+          if (all(y %in% AllEds) & b=="cohort") {xRestr <- 1940 <= dd$myX & dd$myX <= 1990 } else { xRestr <- dd$myX == dd$myX }
+          if        (all(y %in% AllLvlEds )) { 
+            myLo <- lvlLo;  myHi <- lvlHi
+          } else if (all(y %in% AllCondEds)) { 
+            myLo <- condLo; myHi <- condHi
+          } else {
+            myLo <- min(dd$myY); myHi <- max(dd$myY)
+          }
           useData <- dd[xRestr, ]
           
           png(file = paste("./output/CompareGender_for", y, r, "by", b, sep = "_") %&% ".png", res = 600, width = myWidth, height = myHeight)
           
             myPlot <- ggplot(data=useData, aes(x = myX, y = myY, group = Gender, color = Gender)) + 
-              labs(title = "Comparing " %&% genderRunVars_l[y] %&% ":\nBy Gender, Race - " %&% r, x = By_l[b], y = genderRunVars_l[y]) +
+              labs(title = "Comparing " %&% genderRunVars_l[y] %&% ":\nBy Gender, Race - " %&% Dems_l["Race_" %&% r], x = By_l[b], y = genderRunVars_l[y]) +
               scale_colour_discrete(name = "") +
               theme(plot.title = element_text(size = rel(titleRelSize)), legend.position = "bottom", legend.text = element_text(size = rel(legendRelSize)),
                   axis.title.x = element_text(size = rel(axisRelSize)), axis.title.y = element_text(size = rel(axisRelSize))) + 
-              geom_line(size = lineSize)
+              geom_line(size = lineSize) + ylim(myLo, myHi)
             
             print(myPlot)
           
@@ -231,8 +257,8 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
   ### Compare race/eth on one plot (for Ed, indicators, etc)
   #---------------------------------------------------------
   
-    raceRunVars <- c(AllLvlEds, AllCondEds, Dems, Inds)
-    raceRunVars_l <- c(AllEds_l[c(AllLvlEds, AllCondEds)], Dems_l, Inds_l)
+    raceRunVars <- c(AllLvlEds, AllCondEds, Inds) # Dems, 
+    raceRunVars_l <- c(AllEds_l[c(AllLvlEds, AllCondEds)], Inds_l) # Dems_l, 
     names(raceRunVars_l) <- raceRunVars
     print("Running plots by Race")
     
@@ -249,17 +275,24 @@ write.csv(cps, file = "./data/cps_cohort_summary_prepped.csv")
           dd$myX <- dd[, b]
           dd$myY <- dd[, y]
           
-          if (y %in% AllEds & b=="cohort") {xRestr <- 1940 <= dd$myX & dd$myX <= 1990 } else { xRestr <- dd$myX == dd$myX }
+          if (all(y %in% AllEds) & b=="cohort") {xRestr <- 1940 <= dd$myX & dd$myX <= 1990 } else { xRestr <- dd$myX == dd$myX }
           useData <- dd[xRestr, ]
+          if        (all(y %in% AllLvlEds )) { 
+            myLo <- lvlLo;  myHi <- lvlHi
+          } else if (all(y %in% AllCondEds)) { 
+            myLo <- condLo; myHi <- condHi
+          } else {
+            myLo <- min(dd$myY); myHi <- max(dd$myY)
+          }
           
           png(file = paste("./output/CompareRace_for", y, g, "by", b, sep="_") %&% ".png", res = 600, width = myWidth, height = myHeight)
           
             myPlot <- ggplot(data=useData, aes(x = myX, y = myY, group = Race, color = Race)) + 
-              labs(title = "Comparing " %&% raceRunVars_l[y] %&% ":\nBy Race, Gender - " %&% g, x = By_l[b], y = raceRunVars_l[y]) +
+              labs(title = "Comparing " %&% raceRunVars_l[y] %&% ":\nBy Race, Gender - " %&% Dems_l["Gender_" %&% g], x = By_l[b], y = raceRunVars_l[y]) +
               scale_colour_discrete(name = "", breaks = AllRaces) +
               theme(plot.title = element_text(size = rel(titleRelSize)), legend.position = "bottom", legend.text = element_text(size = rel(legendRelSize)),
                 axis.title.x = element_text(size = rel(axisRelSize)), axis.title.y = element_text(size = rel(axisRelSize))) + 
-              geom_line(size = lineSize)
+              geom_line(size = lineSize) + ylim(myLo, myHi)
           
           print(myPlot)
           

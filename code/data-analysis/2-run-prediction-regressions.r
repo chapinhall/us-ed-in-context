@@ -53,13 +53,21 @@ source("./code/data-analysis/var-groups-and-labels.r")
   ### Run Regression Analysis
   #--------------------------
   
-  SpecRuns <- list(Adults=c("RaisedWith2Adults"), MomEd=c("FemEd_Coll_avg"), FamInc=c("FamilyInc_Defl_Avg"), PreK=c("AttendedPreK"))
+  SpecRuns <- list(Adults=c("RaisedWith2Adults"),
+                   MomEd12=c("FemEd_Compl_12Yrs_avg"),
+                   MomEd16=c("FemEd_Compl_16Yrs_avg"),
+                   FamInc=c("FamilyInc_Defl_Avg"),
+                   FamPov=c("FamilyIncAvg_Above100FPL"),
+                   PreK=c("AttendedPreK"))
   cps$one <- 1
   cps$cohort2 <- cps$cohort^2
   standardX <- c("one", "cohort", "cohort2")
   
-  # Initialize the output 
+  # Initialize the output (XXX Could just set myOut to NULL. Or, for better memory management, could initialize
+  #   it with the amount of memory that it would eventually fill--i.e. with full number of rows and data types in
+  #   strings and doubles, etc)
   myOut <- data.frame(Spec = "init", x = "init", Ed = "init", Gender = "init", Race = "init", b = 0, se = 0, r2 = 0, ll = 0, ul = 0)
+  predOut <- data.frame(Spec = "init", Ed = "init", Gender = "init", Race = "init", cohort = 0, Y = 0,  eY = 0, x_i=0, B_x=0, tTrend = 0) # This is used to set up decompositions between time trend and social indicator in expected outcomes
   
   # a. Run regressions of each education outcome on indicators, both overall and for each subdemographic
   for (s in SpecRuns) {
@@ -80,9 +88,11 @@ source("./code/data-analysis/var-groups-and-labels.r")
           dd <- d[d$Gender == g & d$Race == r, ]
           
           # Run regression
-          reg <- summary(lm(as.formula(e %&% "~" %&% x), data=dd))
+          reg.lm <- lm(as.formula(e %&% "~" %&% x), data=dd)
             # XXX when implementing WLS in the future, add: weights = dd[, e %&% "_n"]))
             # Would be interesting to compare OLS and WLS. Consider building a loop to compare
+          reg   <- summary(reg.lm)
+          predY <- predict(reg.lm)
           
           # Compile output
           out <- data.frame(s, rownames(reg$coeff), e, g, r, reg$coeff[, c("Estimate", "Std. Error")], reg$adj.r.squared)
@@ -90,8 +100,17 @@ source("./code/data-analysis/var-groups-and-labels.r")
           out$ll <- out$b - 1.96*out$se
           out$ul <- out$b + 1.96*out$se
           
+          dd.used <- dd[!is.na(dd[,e]) & !is.na(dd[,s]),]
+          tB <- as.vector(reg$coeff[standardX, "Estimate"])
+          ddX.used <- as.matrix(dd.used[, standardX])
+          tTrend <- ddX.used %*% tB
+          pred <- data.frame(s, e, g, r, dd.used$cohort, dd.used[, e], predY, dd.used[, s], reg$coeff[s, "Estimate"], tTrend)
+          rownames(pred) <- NULL
+          colnames(pred) <- colnames(predOut)
+          
           # Output results
           myOut <- rbind(myOut, out)
+          predOut <- rbind(predOut, pred)
           assign(paste("reg", e, s, g, r, sep="_"), out)
           
         } # End of loop across (r)ace
@@ -103,6 +122,9 @@ source("./code/data-analysis/var-groups-and-labels.r")
   myOut <- within(myOut, id <- paste(Spec, x, Ed, Gender, Race, sep = "_"))
   write.csv(myOut, "./data/regression-output.csv")
 
+  rownames(predOut) <- NULL
+  predOut <- within(predOut, id <- paste(Spec, cohort, Ed, Gender, Race, sep = "_"))
+  write.csv(predOut, "./data/pred-decomposition-output.csv")
 
 #------------------------------------------------------------------------------------
 ### Generate compound marginal effect of given predictor on Ed, through full pathways
@@ -119,12 +141,12 @@ for (s in SpecRuns) {
       outSub <- myOut[myOut$Spec == s & myOut$x == s & myOut$Gender == g & myOut$Race == r, c("b", "Ed")]
       dA <- outSub[outSub$Ed == "Ed_Grad_Hs",    "b"]
       dB <- outSub[outSub$Ed == "Ed_SomeCollIf", "b"]
-      dC <- outSub[outSub$Ed == "Ed_CollIf",     "b"]
+      dC <- outSub[outSub$Ed == "Ed_GeCollIf",   "b"]
       
       cpsSub <- cps[cps$Gender == g & cps$Race == r & cps$Weight == "NoW" & !is.na(cps$cohort), c("cohort", AllCondEds)]
       A <- cpsSub[, "Ed_Grad_Hs"]
       B <- cpsSub[, "Ed_SomeCollIf"]
-      C <- cpsSub[, "Ed_CollIf"]
+      C <- cpsSub[, "Ed_GeCollIf"]
       
       totEff <- (dA *  B *  C) + ( A * dB *  C) + ( A *  B * dC) +
                 (dA * dB *  C) + (dA *  B * dC) + ( A * dB * dC) +
