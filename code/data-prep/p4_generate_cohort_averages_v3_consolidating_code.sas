@@ -2,17 +2,11 @@
 ******************************************************************************;
 *** PROGRAM:  P4_GENERATE_COHORT_AVERAGES_V3_CONSOLIDATING_CODE.SAS        ***;                       
 ***                                                                        ***;
-*** LOCATION: GOODLAND SERVER:                                             ***;
-***           /projects/Lumina_SocIndOfPostSec/Code/generation_6_progs     ***;
 *** PROGRAMMERs:    Jeff Harrington and Nick Mader                         ***;
 *** DESCRIPTION:   This program generates descriptive statistics for each  ***;
 ***                cohort, both overall, and by each combination of gender ***;
 ***                and race.  The results aer output to CSV and SAS files. ***;
 ***                                                                        ***;
-*** CREATED:       08/01/13                                                ***;
-*** UPDATES:       02/26/14 by Jeff Harrington                             ***;
-***                 Removed less efficient code and replaced it with more  ***;
-***                 streamlined code provided by Nick Mader.               ***;
 ***                                                                        ***;        
 ******************************************************************************;
 

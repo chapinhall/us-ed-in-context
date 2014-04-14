@@ -31,8 +31,8 @@ Inds <- c("AttendedPreK", "RaisedWith2Adults", "FemEd_Compl_12Yrs_avg", "FemEd_C
 Inds_l <- c("Attended Pre-K", "Raised w/2 Adults", "Mom's Ed >= 12 Yrs", "Mom's Ed >= 16 Yrs", "Family Avg Inc, $10ks", "Family Income\nAbove Poverty Line")
 names(Inds_l) <- Inds
 
-SomeSampleNs <- c("RaisedWith2Adults_N", "Ed_Grad_Hs_N", "Ed_GeColl_N") # "Ed_GeColl_N"
-SomeSampleNs_l <- c("Raised w/2 Adults", "Ed >= HS/GED", "Ed >= Coll") #"Ed = Coll"
+SomeSampleNs <- c("RaisedWith2Adults_N", "Ed_Grad_Hs_N", "Ed_Compl_12Yrs_N") # "Ed_GeColl_N"
+SomeSampleNs_l <- c("Raised w/2 Adults", "Ed >= HS/GED", "Ed >= 12 Yearsl") #"Ed = Coll"
 names(SomeSampleNs_l) <- SomeSampleNs
 
 # This list was originally put together to reflect all variables that might be summarized in some fashion, e.g. by decade of

@@ -2,8 +2,6 @@
 ******************************************************************************;
 *** PROGRAM:  P3_BUILD_COHORTS_V5_STREAMLINE_COHORT_BUILD.SAS              ***;                       
 ***                                                                        ***;
-*** LOCATION: GOODLAND SERVER:                                             ***;
-***           /projects/Lumina_SocIndOfPostSec/Code/generation_6_progs     ***;
 *** PROGRAMMERS:    Jeff Harrington and Nick Mader.                        ***;
 *** DESCRIPTION:   This program builds a birth cohort for each year.       ***;
 ***                                                                        ***;
@@ -20,18 +18,9 @@
 ***                variable called cohort identifying the cohort for which ***;
 ***                each record is a member.                                ***;
 ***                                                                        ***;
-***                                                                        ***;
-*** CREATED:       08/01/13                                                ***;
-*** UPDATES:       02/26/14 by Jeff Harrington                             ***;
-***                 Removed less efficient code and replaced it with more  ***;
-***                 streamlined code provided by Nick Mader.               ***;
-***                08/01/13 by Jeff Harrington                             ***;
-***                 Re-named file for better organization.                 ***;
-***                 Incorporated new, streamlined cohort build method.     ***;
 ***                                                                        ***;        
 ******************************************************************************;
 options mprint mlogic symbolgen linesize=132;
-libname oraora oracle user=&orauser orapw=&orapass path=&oradb;
 libname here '/projects/Lumina_SocIndOfPostSec/Data';
 filename chrtsum '/projects/Lumina_SocIndOfPostSec/Code/generation_6_progs/p4_generate_cohort_averages_v3_consolidating_code.sas';
 
